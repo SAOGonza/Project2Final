@@ -1,0 +1,144 @@
+const chpConnection = require('../database/CHPConnection');
+
+// Controller that interacts with database to retrieve data.
+class CompanyController {
+    constructor() {
+	console.log('Company Controller Initialized!');
+    }
+
+    // Fetches all Companys
+    async Companys(ctx) {
+	console.log('Controller HIT: CompanyController::Companys');
+	return new Promise((resolve, reject) => {
+	                const query = 'SELECT * FROM Company';
+            
+            chpConnection.query(query, (err, res) => {
+                if(err) {
+                    reject(`Error querying Company: ${err}`);
+                }
+                
+                ctx.body = res;
+                ctx.status = 200;
+                
+                resolve();
+            });
+        })
+         .catch(err => {
+            ctx.status = 500;
+            ctx.body = err;
+        });
+    }
+
+    // Fetches a single Company
+    async Company(ctx) {
+        console.log('Controller HIT: CompanyController::Company');
+        return new Promise((resolve, reject) => {
+            const query = 'SELECT * FROM Company WHERE comp_name = ?;';
+            const cp = ctx.params.Company;
+            
+            chpConnection.query({
+                sql: query,
+                values: [dc]
+            }, (err, res) => {
+                if(err) {
+                    reject(err);
+                } 
+
+                ctx.body = res;
+                ctx.status = 200;
+                resolve();
+            });
+        })
+         .catch(err => {
+            ctx.status = 500;
+            ctx.body = {
+                error: `Internal Server Error: ${err}`,
+                status: 500
+            };
+        });
+    }
+
+    // Add a new Company
+    async addCompany(ctx, next) {
+        console.log('Controller HIT: CompanyController::addCompany');
+       return new Promise((resolve, reject) => {
+           const newDC = ctx.request.body;
+           chpConnection.query({
+               sql: 'INSERT INTO L6_Company(name, city, state) VALUES (?, ?, ?);',
+               values: [newDC.name, newDC.city, newDC.state]
+           }, (err, res) => {
+               if(err) {
+                   reject(err);
+               }
+
+               resolve();
+           });
+           
+       })
+        .then(await next)
+        .catch(err => {
+           ctx.status = 500;
+           ctx.body = {
+               error: `Internal Server Error: ${err}`,
+               status: 500
+           };
+       });
+    }
+
+    // Update a Company
+    async updateCompany(ctx, next) {
+        console.log('Controller HIT: CompanyController::updateCompany');
+        return new Promise((resolve, reject) => {
+            const dc = ctx.request.body;
+            chpConnection.query({
+                sql: `
+                    UPDATE L6_Company 
+                    SET 
+                        city = ?,
+                        state = ?
+                    WHERE name = ?
+                    `,
+                values: [dc.city, dc.state, ctx.params.Company]
+            }, (err, res) => {
+                if(err) {
+                    reject(err);
+                }
+
+                resolve();
+            });
+        })
+         .then(await next)
+         .catch(err => {
+            ctx.status = 500;
+            ctx.body = {
+                error: `Internal Server Error: ${err}`,
+                status: 500
+            };
+        });
+    }
+
+    async deleteCompany(ctx, next) {
+        console.log('Controller HIT: CompanyController::deleteCompany');
+        return new Promise((resolve, reject) => {
+            chpConnection.query({
+                sql: `DELETE FROM L6_Company WHERE name = ?;`,
+                values: [ctx.params.Company]
+            }, (err, res) => {
+                if(err) {
+                    reject(err);
+                }
+                resolve();
+            });
+        })
+        .then(await next)
+        .catch(err => {
+            ctx.status = 500;
+            ctx.body = {
+                error: `Internal Server Error: ${err}`,
+                status: 500
+            };
+        });
+    }
+}
+
+module.exports = CompanyController;
